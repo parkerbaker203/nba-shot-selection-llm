@@ -142,3 +142,27 @@ def get_team_shots(
     )
 
     return df_shots_filtered
+
+
+def ingest_data(team_name, num_players, season, season_type):
+    """Runs the full ingestion pipeline in one function
+    Parameters:
+    - team_name (str): Full team name that corresponds to the NBA api's names
+    - num_players (int): Top number of players to get player ids of
+    - season (str): Season year string for the desired time frame
+    - season_type (str): Time of season ^(Regular Season)|(Pre Season)|(Playoffs)|(All Star)$
+    Returns:
+    - team_shots (pd.DataFrame): Filtered dataframe of all shots taken in period by team and information on makes, shot type, etc.
+    """
+    team_id = get_team_id(team_name=team_name)
+    game_ids = get_game_ids(team_id=team_id, season=season, season_type=season_type)
+    cum_team_stats = get_cum_team_stats(team_id, game_ids)
+    avg_minutes = get_average_playtime(game_stats_dict=cum_team_stats)
+    top_x_player_ids = top_x_players_by_min(avg_minutes, num_players=num_players)
+    team_shots = get_team_shots(
+        team_id=team_id,
+        player_ids=top_x_player_ids,
+        season=season,
+        season_type=season_type,
+    )
+    return team_shots
