@@ -5,7 +5,7 @@ Date: 08/31/2025
 
 Parameters user must provide:
 - Full Team Name --  Example: "Knicks"
-- Number of Players to include: 5 is default, should work in some kind of error control for providing all players, might kill processing though
+- Number of Players to include: Defaults to top 5, but if "-1" is given it will return stats for all players on the roster
 - Season -- Example: "2024-25"
 - Season Type -- Example: "Playoffs"
 
@@ -104,13 +104,16 @@ def top_x_players_by_min(avg_minutes, num_players=5):
     """Returns the top x player ids to from the output of get_average_playtime() function
     Parameters:
     - avg_minutes (pd.DataFrame): Dataframe containing the player name, player id, and average minutes played sorted by minutes
-    - num_players (int): Top number of players to get player ids of
+    - num_players (int): Top number of players to get player ids of. If "-1" submitted then all players will be returned.
     Returns:
     - top_num_player_ids (list): List of the top x player ids by minutes played
     """
-    top_num_player_ids = avg_minutes.nlargest(num_players, "ACTUAL_MINUTES")[
-        "PERSON_ID"
-    ].tolist()
+    if num_players == -1:
+        top_num_player_ids = avg_minutes["PERSON_ID"].tolist()
+    else:
+        top_num_player_ids = avg_minutes.nlargest(num_players, "ACTUAL_MINUTES")[
+            "PERSON_ID"
+        ].tolist()
     return top_num_player_ids
 
 
