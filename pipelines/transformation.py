@@ -1,23 +1,19 @@
-"""Data Transformation for NBA-SHOT-SELECTION-LLM
-=====================================================
-Author: Parker Baker
-Date: 08/31/2025
-
-=====================================================
-"""
-
 import pandas as pd
+from pathlib import Path
+import ingest as ing
+import os
+
+from nba_api.stats.endpoints import ShotChartLeagueWide
 
 
-# ----------------------------
-# TEAM-LEVEL TRANSFORMATIONS
-# ----------------------------
 def summarize_team_shots(df_shots):
+    """Rolls up a teams shot data based on SHOT_ZONE_BASIC, also calculates the fg_pct
+    Parameters:
+    - df_shots (pd.DataFrame): Dataframe of shot chart data from ingest.py
+    Returns:
+    - summary (pd.DataFrame): Dataframe of summarized shot data based on location
     """
-    Summarize team shot selection:
-    - count of shots per zone
-    - FG% per zone
-    """
+    # Rolling up shot chart data on shot zone, calculating the fga/fgm/fg_pct
     summary = (
         df_shots.groupby("SHOT_ZONE_BASIC")
         .agg(attempts=("SHOT_MADE_FLAG", "count"), makes=("SHOT_MADE_FLAG", "sum"))
@@ -27,99 +23,66 @@ def summarize_team_shots(df_shots):
     return summary
 
 
-# ----------------------------
-# PLAYER-LEVEL TRANSFORMATIONS
-# ----------------------------
-def summarize_player_shots(df_shots: pd.DataFrame) -> pd.DataFrame:
+def summarize_player_shots(df_shots):
+    """Rolls up team shot chart data on player name and shot zone
+    Parameters:
+    - df_shots (pd.DataFrame): Dataframe of shot chart data from ingest.py
+    Returns:
+    - summary (pd.DataFrame): Dataframe of summarized shot data based on location and player
     """
-    Summarize shots for each player by zone.
-    """
+    # Rolling up the shot chart data on a player and shot zone level
     summary = (
         df_shots.groupby(["PLAYER_NAME", "SHOT_ZONE_BASIC"])
         .agg(attempts=("SHOT_MADE_FLAG", "count"), makes=("SHOT_MADE_FLAG", "sum"))
         .reset_index()
     )
+    # Calculating the fgm/fga/fg_pct
     summary["fg_pct"] = summary["makes"] / summary["attempts"]
     return summary
 
 
-# ----------------------------
-# LEAGUE COMPARISONS
-# ----------------------------
-def compare_to_league(team_shots_df, season="2024-25", opponent_team_name=None):
-    if opponent_team_name is None:
-        # load league averages
-        league_avg = pd.read_parquet(f"data/league_avg_{season}.parquet")
-        comparison = _compare_stats(team_shots_df, league_avg)
-        return comparison
+def summarize_league_avg(league_avg):
+    """Summarizes league average data by rolling up on shot zone
+    Parameters:
+    - league_avg (pd.DataFrame): Dataframe of league shot chart data from ShotChartLeagueWide
+    Returns:
+    - summary (pd.DataFrame): Dataframe of summarized shot data based on location
 
-    # Opponent mode
-    fname = f"data/opponents/opponent_shots_{opponent_team_name}_{season}.parquet"
-    if os.path.exists(fname):
-        opponent_shots = pd.read_parquet(fname)
-    else:
-        # Run ingestion pipeline for opponent
-        opponent_shots = get_team_shots(team_name=opponent_team_name, season=season)
-        opponent_shots.to_parquet(fname, index=False)
-
-    comparison = _compare_stats(team_shots_df, opponent_shots)
-    return comparison
-
-
-# ----------------------------
-# VISUALIZATION PREP
-# ----------------------------
-def prepare_shot_chart_data(df_shots: pd.DataFrame) -> pd.DataFrame:
     """
-    Prepare raw shot chart data for plotting (scatter on a court).
-    Only keep necessary cols: LOC_X, LOC_Y, SHOT_MADE_FLAG.
-    """
-    return df_shots[["LOC_X", "LOC_Y", "SHOT_MADE_FLAG", "PLAYER_NAME"]]
-
-
-import pandas as pd
-
-
-def compare_stats(team_shots_df, comparison_df):
-    """
-    Compare a team's shots against either league averages or opponent shots.
-    """
-
-    # ---- Aggregate TEAM shots ----
-    team_summary = (
-        team_shots_df.groupby("SHOT_ZONE_BASIC")
-        .agg(attempts=("SHOT_MADE_FLAG", "count"), makes=("SHOT_MADE_FLAG", "sum"))
-        .reset_index()
+    # Rolling up the league average shot chart data to shot zone
+    summary = league_avg.groupby("SHOT_ZONE_BASIC", as_index=False).agg(
+        attempts=("FGA", "sum"), makes=("FGM", "sum")
     )
-    team_summary["fg_pct"] = team_summary["makes"] / team_summary["attempts"]
+    # Calculating the fgm/fga/fg_pct
+    summary["fg_pct"] = summary["makes"] / summary["attempts"]
+    return summary
 
-    # ---- Handle comparison dataset ----
-    if "FGA" in comparison_df.columns:
-        # Case 1: League averages (already aggregated)
-        comp_summary = comparison_df.rename(
-            columns={
-                "SHOT_ZONE_BASIC": "SHOT_ZONE_BASIC",
-                "FGA": "attempts",
-                "FGM": "makes",
-                "FG_PCT": "fg_pct",
-            }
-        )[["SHOT_ZONE_BASIC", "attempts", "makes", "fg_pct"]]
 
+def compare_stats(team_shots, opponent_shots, league_y_n=True):
+    """Creates an outer merged dataframe linked on SHOT_ZONE_BASIC between team of interest and selected opponent (league or individual team)
+    Parameters:
+    - team_shots (pd.DataFrame): Dataframe of shot chart data from ingest.py
+    - opponent_shots (pd.DataFrame): Dataframe of opponent shot chart data
+    - league_y_n (Boolean): Binary indicator for whether you want the league average or an individual opponent
+    Returns:
+    - comparison (pd.DataFrame): Outer merged dataframe showing the shot chart data for the current team against the opponents fga/fgm/fg_pct
+    """
+    # Summarizing the current team shot chart
+    team_summary = summarize_team_shots(team_shots)
+    # Checks if the user wants to compare against the league average or a specific opponent
+    if league_y_n == True:
+        # Summarizing the league average shot chart
+        oppo_summary = summarize_league_avg(opponent_shots)
     else:
-        # Case 2: Opponent/team raw shots — aggregate first
-        comp_summary = (
-            comparison_df.groupby("SHOT_ZONE_BASIC")
-            .agg(attempts=("SHOT_MADE_FLAG", "count"), makes=("SHOT_MADE_FLAG", "sum"))
-            .reset_index()
-        )
-        comp_summary["fg_pct"] = comp_summary["makes"] / comp_summary["attempts"]
+        # summarizing the opponents shot chart
+        oppo_summary = summarize_team_shots(opponent_shots)
 
-    # ---- Merge results for comparison ----
+    # Merging results on shot zone and adding suffixes
     comparison = pd.merge(
         team_summary,
-        comp_summary,
+        oppo_summary,
         on="SHOT_ZONE_BASIC",
-        suffixes=("_team", "_comparison"),
+        suffixes=("_team", "_opponent"),
         how="outer",
     ).fillna(0)
 
@@ -127,29 +90,42 @@ def compare_stats(team_shots_df, comparison_df):
 
 
 def compare_to_league(
-    team_shots_df, season="2024-25", opponent_team_name=None, season_type="Playoffs"
+    team_shots, opponent_team_name=None, season="2024-25", season_type="Playoffs"
 ):
+    """Performs full comparison between the current shot chart data and user selected opponent, season, and season type.
+    Also caches/pulls existing shot chart data to reduce api call time.
+    Parameters:
+    - team_shots (pd.DataFrame): Dataframe of shot chart data from ingest.py
+    - opponent_team_name (str): Full team name to compare against
+    - season (str): Season of interest for comparison against provided team shot chart data
+    - season_type (str): Time of season ^(Regular Season)|(Pre Season)|(Playoffs)|(All Star)$
+    Returns:
+    - comparison (pd.DataFrame): Outer merged dataframe showing the shot chart data for the current team against the opponents fga/fgm/fg_pct
+    """
     # Identifying and creating the data_dir if necessary
-    data_dir = Path("data")
-    opponents_dir = data_dir / "shotcharts"
+    data_dir = Path.cwd()
+    data_dir = data_dir.parent / "data" / "shotcharts"
     data_dir.mkdir(exist_ok=True)
-    opponents_dir.mkdir(exist_ok=True)
     # Checking if the opponent team name has been submitted
     if opponent_team_name is None:
         # League average mode
         league_path = data_dir / f"league_avg_{season}.parquet"
+        # Checking if the league average data is cached
         if league_path.exists():
             league_avg = pd.read_parquet(league_path)
         else:
             # Fetch from API
             league_avg = ShotChartLeagueWide(season=season).get_data_frames()[0]
             league_avg.to_parquet(league_path, index=False)
-
-        comparison = compare_stats(team_shots_df, league_avg)
+        # Comparing the current team to league average
+        comparison = compare_stats(
+            team_shots, league_avg, league_y_n=True, season=season
+        )
         return comparison
 
     # Opponent mode
-    oppo_path = opponents_dir / f"opponent_shots_{opponent_team_name}_{season}.parquet"
+    oppo_path = data_dir / f"opponent_shots_{opponent_team_name}_{season}.parquet"
+    # Checking if the data is already cached
     if oppo_path.exists():
         opponent_shots = pd.read_parquet(oppo_path)
     else:
@@ -161,6 +137,19 @@ def compare_to_league(
             season_type=season_type,
         )
         opponent_shots.to_parquet(oppo_path, index=False)
-
-    comparison = compare_stats(team_shots_df, opponent_shots)
+    # Comparing the current team to specified opponent
+    comparison = compare_stats(
+        team_shots, opponent_shots, league_y_n=False, season=season
+    )
     return comparison
+
+
+def prepare_shot_chart_data(df_shots: pd.DataFrame) -> pd.DataFrame:
+    """Prepares the raw shot chart data for creating a visual shot chart of misses and makes
+    Parameters:
+    df_shots (pd.DataFrame): Dataframe of shot chart data from ingest.py
+    Returns:
+    A subset dataframe including only the coordinate locations of the shot, whether it was a make or a miss, and the player name
+    """
+    # Subsetting shot chart data to get players coordinate locations on shots
+    return df_shots[["LOC_X", "LOC_Y", "SHOT_MADE_FLAG", "PLAYER_NAME"]]
