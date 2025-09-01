@@ -108,7 +108,7 @@ def top_x_players_by_min(avg_minutes, num_players=5):
     Returns:
     - top_num_player_ids (list): List of the top x player ids by minutes played
     """
-    if num_players == None:
+    if num_players == -1:
         top_num_player_ids = avg_minutes["PERSON_ID"].tolist()
     else:
         top_num_player_ids = avg_minutes.nlargest(num_players, "ACTUAL_MINUTES")[
