@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-import ingest as ing
+import pipelines.ingest as ing
 import os
 
 from nba_api.stats.endpoints import ShotChartLeagueWide
