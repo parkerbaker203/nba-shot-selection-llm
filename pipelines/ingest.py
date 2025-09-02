@@ -29,17 +29,17 @@ from nba_api.stats.endpoints import CumeStatsTeam
 
 
 def get_team_id(team_name="New York Knicks"):
-    """Gets the team id given the full team name using the NBA api
-    Parameters:
-    - team_name (str): Full team name that corresponds to the NBA api's names
-    Returns:
-    - team_id (int): The team_id corresponding to the provided team_name
-    """
-    # Gets all team data from the nba_api
     nba_teams = teams.get_teams()
-    # Sorts for only the team id that matches the full_name
-    team_id = [team for team in nba_teams if team["full_name"] == team_name][0]["id"]
-    return team_id
+    matches = [
+        team for team in nba_teams if team["full_name"].strip() == team_name.strip()
+    ]
+
+    if not matches:
+        raise ValueError(
+            f"Team name '{team_name}' not found. Check spelling and capitalization."
+        )
+
+    return matches[0]["id"]
 
 
 def get_game_ids(team_id, season="2024-25", season_type="playoffs"):

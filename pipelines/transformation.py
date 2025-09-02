@@ -90,7 +90,7 @@ def compare_stats(team_shots, opponent_shots, league_y_n=True):
 
 
 def compare_to_league(
-    team_shots, opponent_team_name=None, season="2024-25", season_type="Playoffs"
+    team_shots, opponent_team_name="league", season="2024-25", season_type="Playoffs"
 ):
     """Performs full comparison between the current shot chart data and user selected opponent, season, and season type.
     Also caches/pulls existing shot chart data to reduce api call time.
@@ -104,10 +104,12 @@ def compare_to_league(
     """
     # Identifying and creating the data_dir if necessary
     data_dir = Path.cwd()
-    data_dir = data_dir.parent / "data" / "shotcharts"
-    data_dir.mkdir(exist_ok=True)
+    data_dir = Path.cwd().parent / "data" / "shotcharts"
+    data_dir.mkdir(
+        parents=True, exist_ok=True
+    )  # <-- parents=True creates all missing dirs
     # Checking if the opponent team name has been submitted
-    if opponent_team_name is None:
+    if opponent_team_name == "league":
         # League average mode
         league_path = data_dir / f"league_avg_{season}.parquet"
         # Checking if the league average data is cached
@@ -118,9 +120,7 @@ def compare_to_league(
             league_avg = ShotChartLeagueWide(season=season).get_data_frames()[0]
             league_avg.to_parquet(league_path, index=False)
         # Comparing the current team to league average
-        comparison = compare_stats(
-            team_shots, league_avg, league_y_n=True, season=season
-        )
+        comparison = compare_stats(team_shots, league_avg, league_y_n=True)
         return comparison
 
     # Opponent mode
@@ -138,13 +138,11 @@ def compare_to_league(
         )
         opponent_shots.to_parquet(oppo_path, index=False)
     # Comparing the current team to specified opponent
-    comparison = compare_stats(
-        team_shots, opponent_shots, league_y_n=False, season=season
-    )
+    comparison = compare_stats(team_shots, opponent_shots, league_y_n=False)
     return comparison
 
 
-def prepare_shot_chart_data(df_shots: pd.DataFrame) -> pd.DataFrame:
+def prepare_shot_chart_data(df_shots):
     """Prepares the raw shot chart data for creating a visual shot chart of misses and makes
     Parameters:
     df_shots (pd.DataFrame): Dataframe of shot chart data from ingest.py
@@ -153,3 +151,18 @@ def prepare_shot_chart_data(df_shots: pd.DataFrame) -> pd.DataFrame:
     """
     # Subsetting shot chart data to get players coordinate locations on shots
     return df_shots[["LOC_X", "LOC_Y", "SHOT_MADE_FLAG", "PLAYER_NAME"]]
+
+
+def stats_to_dict(df_shots_summarized):
+    """Converts a summarized shot DataFrame into a dictionary suitable for LLM consumption."""
+    df = df_shots_summarized[["SHOT_ZONE_BASIC", "attempts", "makes", "fg_pct"]].copy()
+    df["fg_pct"] = (df["fg_pct"] * 100).round(1)
+
+    stats_dict = {}
+    for _, row in df.iterrows():
+        stats_dict[row["SHOT_ZONE_BASIC"]] = {
+            "attempts": int(row["attempts"]),
+            "makes": int(row["makes"]),
+            "fg_pct": row["fg_pct"],
+        }
+    return stats_dict
