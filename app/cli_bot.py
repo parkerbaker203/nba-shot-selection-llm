@@ -3,6 +3,8 @@ from llm.summarizer import summarize_comparison
 from viz.charts import plot_shot_chart
 from pathlib import Path
 
+# PYTHONPATH=. py app/cli_bot.py
+
 
 def main():
     print("Welcome to the NBA Shot Selection Assistant!")
@@ -18,7 +20,7 @@ def main():
     )
     if show_visual == "yes":
         visual_subject = input(
-            "Would you like to see a specific player's shot chart or the team's attempt? (Jalen Brunson, team)"
+            "Would you like to see a specific player's shot chart or the team's attempt? (Jalen Brunson, team): "
         ).strip()
     else:
         visual_subject = None
@@ -33,7 +35,7 @@ def main():
     print("Comparing to opponent data...")
     comparison = transformation.compare_to_league(
         team_shots,
-        opponent_team_name=None if opponent_name.lower() == "league" else opponent_name,
+        opponent_team_name=opponent_name,
         season=season,
         season_type=season_type,
     )
@@ -47,13 +49,13 @@ def main():
     # Optional visualization
     if show_visual == "yes":
         print("\nCreating visual shot chart...")
-        output_path = Path("data/processed") / f"{team_name}_shot_chart.png"
+        output_dir = Path.cwd() / "data" / "visuals"
+        output_path = output_dir / f"{team_name}_{season}_{season_type}_shot_chart.png"
         if visual_subject == "team":
-            plot_shot_chart(team_shots, output_path)
+            plot_shot_chart(team_shots, output_path, plt_title=team_name)
         else:
             player_shots = team_shots[team_shots["PLAYER_NAME"] == visual_subject]
-            plot_shot_chart(player_shots, output_path)
-        print(f"Shot chart saved to: {output_path}")
+            plot_shot_chart(player_shots, output_path, plt_title=visual_subject)
 
 
 if __name__ == "__main__":

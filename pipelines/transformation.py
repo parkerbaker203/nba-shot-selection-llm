@@ -103,11 +103,7 @@ def compare_to_league(
     - comparison (pd.DataFrame): Outer merged dataframe showing the shot chart data for the current team against the opponents fga/fgm/fg_pct
     """
     # Identifying and creating the data_dir if necessary
-    data_dir = Path.cwd()
-    data_dir = Path.cwd().parent / "data" / "shotcharts"
-    data_dir.mkdir(
-        parents=True, exist_ok=True
-    )  # <-- parents=True creates all missing dirs
+    data_dir = Path.cwd() / "data" / "shotcharts"
     # Checking if the opponent team name has been submitted
     if opponent_team_name == "league":
         # League average mode
@@ -121,13 +117,6 @@ def compare_to_league(
             league_avg.to_parquet(league_path, index=False)
         # Comparing the current team to league average
         comparison = compare_stats(team_shots, league_avg, league_y_n=True)
-        return comparison
-
-    # Opponent mode
-    oppo_path = data_dir / f"opponent_shots_{opponent_team_name}_{season}.parquet"
-    # Checking if the data is already cached
-    if oppo_path.exists():
-        opponent_shots = pd.read_parquet(oppo_path)
     else:
         # Run ingestion pipeline for opponent
         opponent_shots = ing.ingest_data(
@@ -136,9 +125,8 @@ def compare_to_league(
             season=season,
             season_type=season_type,
         )
-        opponent_shots.to_parquet(oppo_path, index=False)
-    # Comparing the current team to specified opponent
-    comparison = compare_stats(team_shots, opponent_shots, league_y_n=False)
+        # Comparing the current team to specified opponent
+        comparison = compare_stats(team_shots, opponent_shots, league_y_n=False)
     return comparison
 
 

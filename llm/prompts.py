@@ -17,4 +17,5 @@ Please provide:
 3. Season type (Regular Season, Playoffs, etc.)
 4. Opponent team name or 'league' for league average
 5. Do you want a visual shot chart? (yes/no)
+6. If you want a visual shot chart, do you want to see a specific player or the team's attempts?
 """

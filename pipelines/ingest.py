@@ -27,6 +27,8 @@ from nba_api.stats.static import teams
 from nba_api.stats.endpoints import LeagueGameFinder
 from nba_api.stats.endpoints import CumeStatsTeam
 
+from pathlib import Path
+
 
 def get_team_id(team_name="New York Knicks"):
     nba_teams = teams.get_teams()
@@ -165,21 +167,30 @@ def ingest_data(team_name, num_players, season, season_type):
     Returns:
     - team_shots (pd.DataFrame): Filtered dataframe of all shots taken in period by team and information on makes, shot type, etc.
     """
-    # Grabs the team id
-    team_id = get_team_id(team_name=team_name)
-    # Grabs the game ids for the users team, season, and season_type
-    game_ids = get_game_ids(team_id=team_id, season=season, season_type=season_type)
-    # Getting all cumalitive game stats for that team and games
-    cum_team_stats = get_cum_team_stats(team_id, game_ids)
-    # Calculating the average playtime for all players on the team in that span of games
-    avg_minutes = get_average_playtime(game_stats_dict=cum_team_stats)
-    # Gets the top x players based on average play time to create shot chart data
-    top_x_player_ids = top_x_players_by_min(avg_minutes, num_players=num_players)
-    # Pulls shot chart data from nba_api
-    team_shots = get_team_shots(
-        team_id=team_id,
-        player_ids=top_x_player_ids,
-        season=season,
-        season_type=season_type,
-    )
+    data_dir = Path.cwd() / "data" / "shotcharts"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    team_path = data_dir / f"shots_{team_name}_{season}_{season_type}.parquet"
+    if team_path.exists():
+        team_shots = pd.read_parquet(team_path)
+        print(f"Loading file from cached parquet: {team_path}")
+    else:
+        # Grabs the team id
+        team_id = get_team_id(team_name=team_name)
+        # Grabs the game ids for the users team, season, and season_type
+        game_ids = get_game_ids(team_id=team_id, season=season, season_type=season_type)
+
+        # Getting all cumalitive game stats for that team and games
+        cum_team_stats = get_cum_team_stats(team_id, game_ids)
+        # Calculating the average playtime for all players on the team in that span of games
+        avg_minutes = get_average_playtime(game_stats_dict=cum_team_stats)
+        # Gets the top x players based on average play time to create shot chart data
+        top_x_player_ids = top_x_players_by_min(avg_minutes, num_players=num_players)
+        # Pulls shot chart data from nba_api
+        team_shots = get_team_shots(
+            team_id=team_id,
+            player_ids=top_x_player_ids,
+            season=season,
+            season_type=season_type,
+        )
+        team_shots.to_parquet(team_path, index=False)
     return team_shots

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from viz.court import draw_court
 
 
-def plot_shot_chart(df_shots, title="Shot Chart"):
+def plot_shot_chart(df_shots, output_path, plt_title="Shot Chart"):
     """
     df_shots: DataFrame with columns ['LOC_X', 'LOC_Y', 'SHOT_MADE_FLAG']
     """
@@ -17,5 +17,8 @@ def plot_shot_chart(df_shots, title="Shot Chart"):
     ax.scatter(made["LOC_X"], made["LOC_Y"], c="green", alpha=0.6, label="Make", s=50)
 
     ax.legend(loc="upper right")
-    ax.set_title(title, fontsize=18)
+    ax.set_title(plt_title, fontsize=18)
+
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    print(f"Saving plot to: {output_path}")
     plt.show()
