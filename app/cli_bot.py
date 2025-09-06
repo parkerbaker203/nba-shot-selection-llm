@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+# Dynamically add the repo root to PYTHONPATH
+repo_root = Path(__file__).resolve().parent.parent
+print(repo_root)
+sys.path.append(str(repo_root))
+
 from pipelines import ingest, transformation
 from llm.summarizer import summarize_comparison
 from viz.charts import plot_shot_chart

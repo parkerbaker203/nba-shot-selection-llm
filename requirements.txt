@@ -2,3 +2,5 @@ matplotlib==3.7.1
 nba_api==1.10.0
 ollama==0.5.3
 pandas==2.3.2
+numpy==1.26.4
+pyarrow==21.0.0
