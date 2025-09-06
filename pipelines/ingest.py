@@ -31,16 +31,24 @@ from pathlib import Path
 
 
 def get_team_id(team_name="New York Knicks"):
+    """Gets the team id using team_name from the nba api
+    Parameters:
+    - team_name (str): Must be the full team name recognized by the nba api, ie: Los Angeles Lakers
+    Returns:
+    - (str) team id number that will be used to search for game ids
+    """
+    # Gets all the teams from the nba api
     nba_teams = teams.get_teams()
+    # Filters to the team the user inputted
     matches = [
         team for team in nba_teams if team["full_name"].strip() == team_name.strip()
     ]
-
+    # Raises an error if the team name was not found
     if not matches:
         raise ValueError(
             f"Team name '{team_name}' not found. Check spelling and capitalization."
         )
-
+    # Returning the matching team id for the team name
     return matches[0]["id"]
 
 
@@ -63,6 +71,7 @@ def get_game_ids(team_id, season="2024-25", season_type="playoffs"):
         .get_data_frames()[0]["GAME_ID"]
         .tolist()
     )
+    # Returning a list of all the game ids for that team, season, and season type
     return game_ids
 
 
@@ -167,6 +176,7 @@ def ingest_data(team_name, num_players, season, season_type):
     Returns:
     - team_shots (pd.DataFrame): Filtered dataframe of all shots taken in period by team and information on makes, shot type, etc.
     """
+    # Sets and creates the data / shotcharts path to cache ingested data. This will reduce api requests in the future.
     data_dir = Path.cwd() / "data" / "shotcharts"
     data_dir.mkdir(parents=True, exist_ok=True)
     team_path = data_dir / f"shots_{team_name}_{season}_{season_type}.parquet"
@@ -192,5 +202,6 @@ def ingest_data(team_name, num_players, season, season_type):
             season=season,
             season_type=season_type,
         )
+        # If the data didn't exist already, then cache the parquet file
         team_shots.to_parquet(team_path, index=False)
     return team_shots

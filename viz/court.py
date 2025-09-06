@@ -3,10 +3,15 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 
-def draw_court(ax=None, color="black", lw=2):
-    """Draws an NBA court using matplotlib patches"""
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(15, 7.5))
+def draw_court(color="black", lw=2):
+    """Draws an NBA court using matplotlib patches
+    Parameters:
+    - color (str): Color of the halfcourt lines, defaults to black
+    - lw (int): Size of the line widths
+    Returns
+    - ax (plt): Emtpy plot of half court to display shot chart information on
+    """
+    fig, ax = plt.subplots(figsize=(15, 7.5))
 
     # Hoop
     hoop = patches.Circle((0, 0), radius=7.5, linewidth=lw, color=color, fill=False)

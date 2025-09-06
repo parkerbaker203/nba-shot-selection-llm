@@ -4,8 +4,11 @@ from viz.court import draw_court
 
 
 def plot_shot_chart(df_shots, output_path, plt_title="Shot Chart"):
-    """
-    df_shots: DataFrame with columns ['LOC_X', 'LOC_Y', 'SHOT_MADE_FLAG']
+    """Plots the shot chart data onto the empty half court plot
+    Parameters:
+    - df_shots (pd.DataFrame): DataFrame with columns ['LOC_X', 'LOC_Y', 'SHOT_MADE_FLAG']
+    - output_path (str): Filepath to export the png to
+    - plt_title (str): Title to be displayed above the shot chart
     """
     ax = draw_court()
 
@@ -19,6 +22,8 @@ def plot_shot_chart(df_shots, output_path, plt_title="Shot Chart"):
     ax.legend(loc="upper right")
     ax.set_title(plt_title, fontsize=18)
 
+    # Saving the plot to a png file
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     print(f"Saving plot to: {output_path}")
+    # Displaying the plot for the user to see
     plt.show()

@@ -3,12 +3,14 @@ from llm.summarizer import summarize_comparison
 from viz.charts import plot_shot_chart
 from pathlib import Path
 
+## Run the code from git bash to start the bot
 # PYTHONPATH=. py app/cli_bot.py
 
 
 def main():
+    # Printing messages to the terminal for the bots response and to prompt the user
     print("Welcome to the NBA Shot Selection Assistant!")
-
+    # Getting the user's desired information
     team_name = input("Enter your team of interest: ").strip()
     opponent_name = input("Enter opponent team name or 'league': ").strip()
     season = input("Enter the season (e.g., 2024-25): ").strip()
@@ -18,6 +20,7 @@ def main():
     show_visual = (
         input("Would you like a visual shot chart? (yes/no): ").strip().lower()
     )
+    # If the user wants a visual, then ask for a specific player to subset the shot chart data when displaying
     if show_visual == "yes":
         visual_subject = input(
             "Would you like to see a specific player's shot chart or the team's attempt? (Jalen Brunson, team): "

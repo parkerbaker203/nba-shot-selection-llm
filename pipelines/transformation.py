@@ -141,16 +141,21 @@ def prepare_shot_chart_data(df_shots):
     return df_shots[["LOC_X", "LOC_Y", "SHOT_MADE_FLAG", "PLAYER_NAME"]]
 
 
-def stats_to_dict(df_shots_summarized):
-    """Converts a summarized shot DataFrame into a dictionary suitable for LLM consumption."""
-    df = df_shots_summarized[["SHOT_ZONE_BASIC", "attempts", "makes", "fg_pct"]].copy()
-    df["fg_pct"] = (df["fg_pct"] * 100).round(1)
+# def stats_to_dict(df_shots_summarized):
+#     """Converts a summarized shot DataFrame into a dictionary suitable for LLM consumption.
+#     Parameters:
+#     - df_shots_summarized (pd.DataFrame): Dataframe of the shot chart summarized
+#     Returns:
+#     stats_dict (dict): Dictionary containing the shot zone, attempts, makes, and fg_pct for the llm to interpret
+#     """
+#     df = df_shots_summarized[["SHOT_ZONE_BASIC", "attempts", "makes", "fg_pct"]].copy()
+#     df["fg_pct"] = (df["fg_pct"] * 100).round(1)
 
-    stats_dict = {}
-    for _, row in df.iterrows():
-        stats_dict[row["SHOT_ZONE_BASIC"]] = {
-            "attempts": int(row["attempts"]),
-            "makes": int(row["makes"]),
-            "fg_pct": row["fg_pct"],
-        }
-    return stats_dict
+#     stats_dict = {}
+#     for _, row in df.iterrows():
+#         stats_dict[row["SHOT_ZONE_BASIC"]] = {
+#             "attempts": int(row["attempts"]),
+#             "makes": int(row["makes"]),
+#             "fg_pct": row["fg_pct"],
+#         }
+#     return stats_dict
