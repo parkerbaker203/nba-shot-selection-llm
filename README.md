@@ -13,11 +13,11 @@ Must download ollama to run client side: https://ollama.com/download/windows
 - Add ollama to PATH variables
 
 Setup environment:
->> git clone https://github.com/parkerbaker203/nba-shot-selection-llm.git
->> cd nba-shot-selection-llm
->> py -m venv venv
->> source venv/bin/activate   # or  >> .\venv\Scripts\Activate on Windows
->> pip install -r requirements.txt
+- git clone https://github.com/parkerbaker203/nba-shot-selection-llm.git
+- cd nba-shot-selection-llm
+- py -m venv venv
+- source venv/bin/activate   # or  >> .\venv\Scripts\Activate on Windows
+- pip install -r requirements.txt
 
 
 Run code from terminal with this line:
