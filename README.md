@@ -1,6 +1,6 @@
 # NBA Shot Selection LLM Bot 🏀
 
-This project combines **data engineering**, **data science**, and **LLM integration** to analyze NBA shot selection.
+My goal with this project was to create a light project that interfaced with an LLM. I was able to create an NBA Shot Chart Bot that utilizes the nba api to collect statistics on user selected teams. Those statistics are then fed into the LLM as context and an analysis is returned.
 
 ## Features
 - 📥 **Data Ingestion:** Pull NBA team and shot chart data using the `nba_api`.
